@@ -48,6 +48,7 @@ class RippleRenderer(val context: Context) : GLSurfaceView.Renderer {
 
     var rippleOffset: Float = 0f
     var rippleFrequency: Float = 0f
+    var point: Pair<Float, Float> = Pair(0.5f, 0.5f)
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
@@ -125,11 +126,11 @@ class RippleRenderer(val context: Context) : GLSurfaceView.Renderer {
         }
 
         GLES20.glGetUniformLocation(programId, "rippleCenterUvX").run {
-            GLES20.glUniform1f(this, 0.5f)
+            GLES20.glUniform1f(this, point.first)
         }
 
         GLES20.glGetUniformLocation(programId, "rippleCenterUvY").run {
-            GLES20.glUniform1f(this, 0.5f)
+            GLES20.glUniform1f(this, point.second)
         }
 
         GLES20.glGetUniformLocation(programId, "rippleSineDisappearDistance").run {

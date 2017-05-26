@@ -15,8 +15,10 @@ uniform float rippleCenterUvY;
 uniform float rippleSineDisappearDistance;
 
 void main(void) {
-    // Make the origin center.
+    // Set the origin.
     vec2 cPos = -1.0 + 2.0 * texcoordVarying;
+    cPos.x -= rippleCenterUvX;
+    cPos.y -= rippleCenterUvY;
 
     // Don't stretch the shape.
     float ratio = resolution.x / resolution.y;
