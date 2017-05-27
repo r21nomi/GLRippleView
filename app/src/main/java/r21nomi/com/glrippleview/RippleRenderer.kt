@@ -48,7 +48,7 @@ class RippleRenderer(val context: Context) : GLSurfaceView.Renderer {
 
     var rippleOffset: Float = 0f
     var rippleFrequency: Float = 0f
-    var point: Pair<Float, Float> = Pair(0.5f, 0.5f)
+    var point: Pair<Float, Float> = Pair(0f, 0f)
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
