@@ -8,7 +8,6 @@ import android.opengl.GLUtils
 import android.util.Log
 import java.io.IOException
 import java.io.InputStream
-import java.nio.FloatBuffer
 import java.util.concurrent.TimeUnit
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -17,7 +16,7 @@ import javax.microedition.khronos.opengles.GL10
  * Created by Ryota Niinomi on 2017/05/24.
  */
 class RippleRenderer(private val context: Context,
-                     private val bgImage: Bitmap) : GLSurfaceView.Renderer {
+                     private var bgImages: MutableList<Bitmap>) : GLSurfaceView.Renderer {
 
     companion object {
         private val NS_PER_SECOND = TimeUnit.SECONDS.toNanos(1).toFloat()
@@ -37,11 +36,7 @@ class RippleRenderer(private val context: Context,
         )
     }
 
-    private var programId: Int = 0
-    private var textureId: Int = 0
-
-    private val vertexBuffer: FloatBuffer = BufferUtil.convert(VERTICES)
-    private val texcoordBuffer: FloatBuffer = BufferUtil.convert(TEX_COORDS)
+    private var renderInfoList: MutableList<RenderInfo> = mutableListOf()
 
     private val windowWidth: Float = WindowUtil.getWidth(context).toFloat()
     private val windowHeight: Float = WindowUtil.getHeight(context).toFloat()
@@ -50,31 +45,37 @@ class RippleRenderer(private val context: Context,
     var rippleFrequency: Float = 0f
     var point: Pair<Float, Float> = Pair(0f, 0f)
 
+    init {
+        setRenderInfoList()
+    }
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
 
-        try {
-            programId = GLES20.glCreateProgram()
+        doEveryRenderInfoList({ renderInfo ->
+            try {
+                renderInfo.programId = GLES20.glCreateProgram()
 
-            GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER).let { vertexShader ->
-                GLES20.glShaderSource(vertexShader, loadRawResource(context, R.raw.ripple_vertex))
-                GLES20.glCompileShader(vertexShader)
-                GLES20.glAttachShader(programId, vertexShader)
+                GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER).let { vertexShader ->
+                    GLES20.glShaderSource(vertexShader, loadRawResource(context, R.raw.ripple_vertex))
+                    GLES20.glCompileShader(vertexShader)
+                    GLES20.glAttachShader(renderInfo.programId, vertexShader)
+                }
+
+                GLES20.glCreateShader(GLES20.GL_FRAGMENT_SHADER).let { fragmentShader ->
+                    GLES20.glShaderSource(fragmentShader, loadRawResource(context, R.raw.ripple_fragment))
+                    GLES20.glCompileShader(fragmentShader)
+                    GLES20.glAttachShader(renderInfo.programId, fragmentShader)
+                }
+
+                GLES20.glLinkProgram(renderInfo.programId)
+                GLES20.glUseProgram(renderInfo.programId)
+            } catch (e: IOException) {
+                Log.e(this.javaClass.name, e.message)
             }
 
-            GLES20.glCreateShader(GLES20.GL_FRAGMENT_SHADER).let { fragmentShader ->
-                GLES20.glShaderSource(fragmentShader, loadRawResource(context, R.raw.ripple_fragment))
-                GLES20.glCompileShader(fragmentShader)
-                GLES20.glAttachShader(programId, fragmentShader)
-            }
-
-            GLES20.glLinkProgram(programId)
-            GLES20.glUseProgram(programId)
-        } catch (e: IOException) {
-            Log.e(this.javaClass.name, e.message)
-        }
-
-        textureId = loadTexture(bgImage)
+            renderInfo.textureId = loadTexture(renderInfo.bgImage)
+        })
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -84,68 +85,80 @@ class RippleRenderer(private val context: Context,
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        // position
-        val position: Int = GLES20.glGetAttribLocation(programId, "position")
-        GLES20.glEnableVertexAttribArray(position)
-        GLES20.glVertexAttribPointer(position, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer)
+        doEveryRenderInfoList({ renderInfo ->
+            // position
+            val position: Int = GLES20.glGetAttribLocation(renderInfo.programId, "position")
+            GLES20.glEnableVertexAttribArray(position)
+            GLES20.glVertexAttribPointer(position, 3, GLES20.GL_FLOAT, false, 0, renderInfo.vertexBuffer)
 
-        // texCoord
-        val texCoord: Int = GLES20.glGetAttribLocation(programId, "texcoord")
-        GLES20.glEnableVertexAttribArray(texCoord)
-        GLES20.glVertexAttribPointer(texCoord, 2, GLES20.GL_FLOAT, false, 0, texcoordBuffer)
+            // texCoord
+            val texCoord: Int = GLES20.glGetAttribLocation(renderInfo.programId, "texcoord")
+            GLES20.glEnableVertexAttribArray(texCoord)
+            GLES20.glVertexAttribPointer(texCoord, 2, GLES20.GL_FLOAT, false, 0, renderInfo.texcoordBuffer)
 
-        // texture
-        GLES20.glGetUniformLocation(programId, "texture").run {
-            GLES20.glUniform1i(this, 0)
-        }
+            // texture
+            GLES20.glGetUniformLocation(renderInfo.programId, "texture").run {
+                GLES20.glUniform1i(this, 0)
+            }
 
-        // resolution
-        GLES20.glGetUniformLocation(programId, "resolution").run {
-            GLES20.glUniform2f(this, windowWidth, windowHeight)
-        }
+            // resolution
+            GLES20.glGetUniformLocation(renderInfo.programId, "resolution").run {
+                GLES20.glUniform2f(this, windowWidth, windowHeight)
+            }
 
-        // time
-        GLES20.glGetUniformLocation(programId, "time").run {
-            val now = System.nanoTime()
-            val delta = now / NS_PER_SECOND
-            GLES20.glUniform1f(this, delta)
-        }
+            // time
+            GLES20.glGetUniformLocation(renderInfo.programId, "time").run {
+                val now = System.nanoTime()
+                val delta = now / NS_PER_SECOND
+                GLES20.glUniform1f(this, delta)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleStrength").run {
-            GLES20.glUniform1f(this, 10f)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleStrength").run {
+                GLES20.glUniform1f(this, 10f)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleOffset").run {
-            GLES20.glUniform1f(this, rippleOffset)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleOffset").run {
+                GLES20.glUniform1f(this, rippleOffset)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleFrequency").run {
-            GLES20.glUniform1f(this, rippleFrequency)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleFrequency").run {
+                GLES20.glUniform1f(this, rippleFrequency)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleCenterUvX").run {
-            GLES20.glUniform1f(this, point.first)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleCenterUvX").run {
+                GLES20.glUniform1f(this, point.first)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleCenterUvY").run {
-            GLES20.glUniform1f(this, point.second)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleCenterUvY").run {
+                GLES20.glUniform1f(this, point.second)
+            }
 
-        GLES20.glGetUniformLocation(programId, "rippleSineDisappearDistance").run {
-            GLES20.glUniform1f(this, 100f)
-        }
+            GLES20.glGetUniformLocation(renderInfo.programId, "rippleSineDisappearDistance").run {
+                GLES20.glUniform1f(this, 100f)
+            }
 
-        GLES20.glEnable(GLES20.GL_TEXTURE_2D)
-        GLES20.glEnable(GLES20.GL_BLEND)
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            GLES20.glGetUniformLocation(renderInfo.programId, "alpha").run {
+                GLES20.glUniform1f(this, 1f)
+            }
 
-        // disable
-        GLES20.glDisableVertexAttribArray(position)
-        GLES20.glDisableVertexAttribArray(texCoord)
-        GLES20.glDisable(GLES20.GL_BLEND)
-        GLES20.glDisable(GLES20.GL_TEXTURE_2D)
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderInfo.textureId)
+            GLES20.glEnable(GLES20.GL_TEXTURE_2D)
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+            // disable
+            GLES20.glDisableVertexAttribArray(position)
+            GLES20.glDisableVertexAttribArray(texCoord)
+            GLES20.glDisable(GLES20.GL_BLEND)
+            GLES20.glDisable(GLES20.GL_TEXTURE_2D)
+        })
+    }
+
+    fun addBackgroundImages(images: List<Bitmap>) {
+        bgImages.addAll(images)
+        setRenderInfoList()
     }
 
     private fun loadTexture(bitmap: Bitmap): Int {
@@ -172,5 +185,25 @@ class RippleRenderer(private val context: Context,
         val l = inputStream.available()
         val b = ByteArray(l)
         return if (inputStream.read(b) == l) String(b) else ""
+    }
+
+    private fun doEveryRenderInfoList(action: (RenderInfo) -> Unit) {
+        for (i in (renderInfoList.size - 1) downTo 0) {
+            action(renderInfoList[i])
+        }
+    }
+
+    private fun setRenderInfoList() {
+        renderInfoList.clear()
+
+        bgImages.forEach { bgImage ->
+            renderInfoList.add(RenderInfo(
+                    BufferUtil.convert(VERTICES),
+                    BufferUtil.convert(TEX_COORDS),
+                    0,
+                    0,
+                    bgImage
+            ))
+        }
     }
 }
