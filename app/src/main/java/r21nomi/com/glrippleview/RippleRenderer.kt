@@ -2,7 +2,6 @@ package r21nomi.com.glrippleview
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
@@ -17,7 +16,8 @@ import javax.microedition.khronos.opengles.GL10
 /**
  * Created by Ryota Niinomi on 2017/05/24.
  */
-class RippleRenderer(val context: Context) : GLSurfaceView.Renderer {
+class RippleRenderer(private val context: Context,
+                     private val bgImage: Bitmap) : GLSurfaceView.Renderer {
 
     companion object {
         private val NS_PER_SECOND = TimeUnit.SECONDS.toNanos(1).toFloat()
@@ -74,9 +74,7 @@ class RippleRenderer(val context: Context) : GLSurfaceView.Renderer {
             Log.e(this.javaClass.name, e.message)
         }
 
-        BitmapFactory.decodeResource(context.resources, R.drawable.bg).let { bitmap ->
-            textureId = loadTexture(bitmap)
-        }
+        textureId = loadTexture(bgImage)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
