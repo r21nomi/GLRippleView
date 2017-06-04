@@ -39,6 +39,10 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderer?.addBackgroundImages(images)
     }
 
+    fun startCrossFadeAnimation() {
+        renderer?.startCrossFadeAnimation()
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         event ?: return super.onTouchEvent(event)
 

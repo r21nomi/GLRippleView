@@ -11,5 +11,6 @@ data class RenderInfo(
         val texcoordBuffer: FloatBuffer,
         var programId: Int,
         var textureId: Int,
-        val bgImage: Bitmap
+        val bgImage: Bitmap,
+        var alpha: Float
 )

@@ -20,5 +20,6 @@ class MainActivity : AppCompatActivity() {
                 BitmapFactory.decodeResource(resources, R.drawable.bg_musicrecognition02),
                 BitmapFactory.decodeResource(resources, R.drawable.bg_musicrecognition03)
         ))
+        glRippleView1.startCrossFadeAnimation()
     }
 }

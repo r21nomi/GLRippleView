@@ -1,5 +1,8 @@
 package r21nomi.com.glrippleview
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
@@ -44,6 +47,9 @@ class RippleRenderer(private val context: Context,
     var rippleOffset: Float = 0f
     var rippleFrequency: Float = 0f
     var point: Pair<Float, Float> = Pair(0f, 0f)
+    var currentImageIndex: Int = 0
+    var fadeAnimator: ValueAnimator? = null
+    var fadeDuration: Long = 5000
 
     init {
         setRenderInfoList()
@@ -138,7 +144,7 @@ class RippleRenderer(private val context: Context,
             }
 
             GLES20.glGetUniformLocation(renderInfo.programId, "alpha").run {
-                GLES20.glUniform1f(this, 1f)
+                GLES20.glUniform1f(this, renderInfo.alpha)
             }
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -156,9 +162,38 @@ class RippleRenderer(private val context: Context,
         })
     }
 
+    /**
+     * Add images for cross fade animation.
+     */
     fun addBackgroundImages(images: List<Bitmap>) {
         bgImages.addAll(images)
         setRenderInfoList()
+    }
+
+    /**
+     * Start cross fade animation.
+     */
+    fun startCrossFadeAnimation() {
+        fadeAnimator = ValueAnimator.ofFloat(0f, 1f)
+        fadeAnimator?.duration = fadeDuration
+        fadeAnimator?.addUpdateListener({ animator ->
+            val velocity: Float = animator.animatedValue as Float
+
+            renderInfoList[currentImageIndex].alpha = 1f - velocity
+            renderInfoList[getNextImageIndex()].alpha = velocity
+        })
+        fadeAnimator?.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                super.onAnimationEnd(animation)
+                currentImageIndex++
+
+                if (currentImageIndex > renderInfoList.size - 1) {
+                    currentImageIndex = 0
+                }
+                startCrossFadeAnimation()
+            }
+        })
+        fadeAnimator?.start()
     }
 
     private fun loadTexture(bitmap: Bitmap): Int {
@@ -196,14 +231,23 @@ class RippleRenderer(private val context: Context,
     private fun setRenderInfoList() {
         renderInfoList.clear()
 
-        bgImages.forEach { bgImage ->
+        bgImages.forEachIndexed { index, bgImage ->
             renderInfoList.add(RenderInfo(
                     BufferUtil.convert(VERTICES),
                     BufferUtil.convert(TEX_COORDS),
                     0,
                     0,
-                    bgImage
+                    bgImage,
+                    if (index == 0 ) 1f else 0f
             ))
         }
+    }
+
+    /**
+     * Get next index for background image.
+     * If there is no next index, return 0.
+     */
+    private fun getNextImageIndex(): Int {
+        return if (currentImageIndex + 1 > renderInfoList.size - 1) 0 else currentImageIndex + 1
     }
 }
