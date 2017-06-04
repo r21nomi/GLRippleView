@@ -13,6 +13,7 @@ uniform float rippleFrequency;
 uniform float rippleCenterUvX;
 uniform float rippleCenterUvY;
 uniform float rippleSineDisappearDistance;
+uniform float alpha;
 
 void main(void) {
     // Set the origin.
@@ -30,8 +31,8 @@ void main(void) {
     float velocity = 25.0;
     float speed = velocity - 10.0;
 
-//    vec2 uv = texcoordVarying + (cPos / cLength) * cos(cLength * velocity - time * speed) * rippleOffset * pow(length(cPos), 1.0);
     vec2 uv = texcoordVarying + (cPos / cLength) * cos(cLength * velocity - time * speed) * rippleOffset;
+    vec4 color = texture2D(texture, uv);
 
-    gl_FragColor = texture2D(texture, uv);
+    gl_FragColor = vec4(color.r, color.g, color.b, alpha);
 }

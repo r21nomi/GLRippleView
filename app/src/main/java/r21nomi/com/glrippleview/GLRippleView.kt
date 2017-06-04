@@ -3,7 +3,6 @@ package r21nomi.com.glrippleview
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
@@ -27,13 +26,29 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     init {
         setBackgroundImage(attrs)
 
-        bgImage?.run {
-            renderer = RippleRenderer(context, this)
-        }
+        val image = bgImage?.run { mutableListOf(this) } ?: mutableListOf()
+
+        renderer = RippleRenderer(context, image)
 
         setEGLContextClientVersion(OPENGL_ES_VERSION)
         setRenderer(renderer)
         renderMode = RENDERMODE_CONTINUOUSLY
+    }
+
+    fun addBackgroundImages(images: List<Bitmap>) {
+        renderer?.addBackgroundImages(images)
+    }
+
+    fun setFadeDuration(duration: Long) {
+        renderer?.fadeDuration = duration
+    }
+
+    fun setFadeInterval(interval: Long) {
+        renderer?.fadeInterval = interval
+    }
+
+    fun startCrossFadeAnimation() {
+        renderer?.startCrossFadeAnimation()
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -64,10 +79,10 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     private fun setBackgroundImage(attrs: AttributeSet?) {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.GLRippleView)
-        val drawable: Drawable = typedArray.getDrawable(R.styleable.GLRippleView_backgroundImage)
 
-        bgImage = (drawable as BitmapDrawable).bitmap
-
-        typedArray.recycle()
+        typedArray.getDrawable(R.styleable.GLRippleView_backgroundImage)?.let { drawable ->
+            bgImage = (drawable as BitmapDrawable).bitmap
+            typedArray.recycle()
+        }
     }
 }
