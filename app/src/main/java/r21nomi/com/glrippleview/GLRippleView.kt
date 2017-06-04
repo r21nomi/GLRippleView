@@ -39,6 +39,14 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderer?.addBackgroundImages(images)
     }
 
+    fun setFadeDuration(duration: Long) {
+        renderer?.fadeDuration = duration
+    }
+
+    fun setFadeInterval(interval: Long) {
+        renderer?.fadeInterval = interval
+    }
+
     fun startCrossFadeAnimation() {
         renderer?.startCrossFadeAnimation()
     }

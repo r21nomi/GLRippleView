@@ -8,6 +8,8 @@ import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import java.io.IOException
 import java.io.InputStream
@@ -40,16 +42,17 @@ class RippleRenderer(private val context: Context,
     }
 
     private var renderInfoList: MutableList<RenderInfo> = mutableListOf()
-
     private val windowWidth: Float = WindowUtil.getWidth(context).toFloat()
     private val windowHeight: Float = WindowUtil.getHeight(context).toFloat()
+    private val handler: Handler = Handler(Looper.getMainLooper())
+    private var fadeAnimator: ValueAnimator? = null
 
     var rippleOffset: Float = 0f
     var rippleFrequency: Float = 0f
     var point: Pair<Float, Float> = Pair(0f, 0f)
     var currentImageIndex: Int = 0
-    var fadeAnimator: ValueAnimator? = null
-    var fadeDuration: Long = 5000
+    var fadeDuration: Long = 3000
+    var fadeInterval: Long = 5000
 
     init {
         setRenderInfoList()
@@ -171,7 +174,7 @@ class RippleRenderer(private val context: Context,
     }
 
     /**
-     * Start cross fade animation.
+     * Start cross fade animation after fade interval.
      */
     fun startCrossFadeAnimation() {
         fadeAnimator = ValueAnimator.ofFloat(0f, 1f)
@@ -193,7 +196,9 @@ class RippleRenderer(private val context: Context,
                 startCrossFadeAnimation()
             }
         })
-        fadeAnimator?.start()
+        handler.postDelayed({
+            fadeAnimator?.start()
+        }, fadeInterval)
     }
 
     private fun loadTexture(bitmap: Bitmap): Int {
