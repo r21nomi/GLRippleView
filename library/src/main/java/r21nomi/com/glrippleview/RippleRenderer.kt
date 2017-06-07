@@ -61,7 +61,7 @@ internal class RippleRenderer(private val context: Context,
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
 
-        doEveryRenderInfoList({ renderInfo ->
+        doAllRenderInfo({ renderInfo ->
             try {
                 renderInfo.programId = GLES20.glCreateProgram()
 
@@ -94,7 +94,7 @@ internal class RippleRenderer(private val context: Context,
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        doEveryRenderInfoList({ renderInfo ->
+        doCurrentAndNextRenderInfo({ renderInfo ->
             // position
             val position: Int = GLES20.glGetAttribLocation(renderInfo.programId, "position")
             GLES20.glEnableVertexAttribArray(position)
@@ -177,6 +177,11 @@ internal class RippleRenderer(private val context: Context,
      * Start cross fade animation after fade interval.
      */
     fun startCrossFadeAnimation() {
+        if (renderInfoList.size < 2) {
+            Log.i(javaClass.name, "Can not start cross-fade animation since renderInfoList size is under 2.")
+            return
+        }
+
         fadeAnimator = ValueAnimator.ofFloat(0f, 1f)
         fadeAnimator?.duration = fadeDuration
         fadeAnimator?.addUpdateListener({ animator ->
@@ -227,10 +232,27 @@ internal class RippleRenderer(private val context: Context,
         return if (inputStream.read(b) == l) String(b) else ""
     }
 
-    private fun doEveryRenderInfoList(action: (RenderInfo) -> Unit) {
+    /**
+     * This should be called from onSurfaceCreated().
+     */
+    private fun doAllRenderInfo(action: (RenderInfo) -> Unit) {
         for (i in (renderInfoList.size - 1) downTo 0) {
             action(renderInfoList[i])
         }
+    }
+
+    /**
+     * This should be called from onDrawFrame().
+     * For cross-fading, drawing current and next item is enough.
+     */
+    private fun doCurrentAndNextRenderInfo(action: (RenderInfo) -> Unit) {
+        if (renderInfoList.size == 0) {
+            return
+        }
+        if (renderInfoList.size >= 2) {
+            action(renderInfoList[getNextImageIndex()])
+        }
+        action(renderInfoList[currentImageIndex])
     }
 
     private fun setRenderInfoList() {
