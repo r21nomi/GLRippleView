@@ -28,35 +28,55 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
         val image = bgImage?.run { mutableListOf(this) } ?: mutableListOf()
 
-        renderer = RippleRenderer(context, image)
+        renderer = RippleRenderer(context.applicationContext, image)
 
         setEGLContextClientVersion(OPENGL_ES_VERSION)
         setRenderer(renderer)
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
+    /**
+     * Add images to cross-fade.
+     */
     fun addBackgroundImages(images: List<Bitmap>) {
         renderer.addBackgroundImages(images)
     }
 
+    /**
+     * Set duration for cross-fade.
+     */
     fun setFadeDuration(duration: Long) {
         renderer.fadeDuration = duration
     }
 
+    /**
+     * Set interval time until start cross-fade.
+     */
     fun setFadeInterval(interval: Long) {
         renderer.fadeInterval = interval
     }
 
-    fun startCrossFadeAnimation() {
-        renderer.startCrossFadeAnimation()
-    }
-
+    /**
+     * Set center point of ripple.
+     * @FloatRange(from = -1.0, to = 1.0)
+     */
     fun setRipplePoint(xAndY: Pair<Float, Float>) {
         renderer.point = xAndY
     }
 
+    /**
+     * Set offset for ripple.
+     * This value affects to ripple strength.
+     */
     fun setRippleOffset(offset: Float) {
         renderer.rippleOffset = offset
+    }
+
+    /**
+     * Start cross-fade animation.
+     */
+    fun startCrossFadeAnimation() {
+        renderer.startCrossFadeAnimation()
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {

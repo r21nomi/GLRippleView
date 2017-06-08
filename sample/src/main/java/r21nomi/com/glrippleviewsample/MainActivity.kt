@@ -61,6 +61,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        glRippleView.onResume()
+    }
+
+    override fun onStop() {
+        glRippleView.onPause()
+        super.onStop()
+    }
+
     fun getWidth(context: Context): Float {
         val display = getDisplay(context)
         val size = Point()
