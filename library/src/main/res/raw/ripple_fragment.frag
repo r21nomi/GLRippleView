@@ -7,12 +7,9 @@ uniform sampler2D texture;
 
 uniform float time;
 uniform vec2 resolution;
-uniform float rippleStrength;
 uniform float rippleOffset;
-uniform float rippleFrequency;
 uniform float rippleCenterUvX;
 uniform float rippleCenterUvY;
-uniform float rippleSineDisappearDistance;
 uniform float alpha;
 
 void main(void) {
