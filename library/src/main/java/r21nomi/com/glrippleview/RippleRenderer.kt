@@ -50,7 +50,7 @@ internal class RippleRenderer(private val context: Context,
 
     var rippleOffset: Float = 0f
     var point: Pair<Float, Float> = Pair(0f, 0f)
-    var fadeDuration: Long = 3000
+    var fadeDuration: Long = 2000
     var fadeInterval: Long = 5000
 
     init {

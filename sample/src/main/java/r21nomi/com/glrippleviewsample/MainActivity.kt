@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                     BitmapFactory.decodeResource(resources, R.drawable.bg2),
                     BitmapFactory.decodeResource(resources, R.drawable.bg3)
             ))
-            setFadeInterval(TimeUnit.SECONDS.toMillis(10))
+            setFadeInterval(TimeUnit.SECONDS.toMillis(5))
             startCrossFadeAnimation()
         }
     }
