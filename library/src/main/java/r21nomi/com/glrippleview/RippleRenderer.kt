@@ -46,11 +46,10 @@ internal class RippleRenderer(private val context: Context,
     private val windowHeight: Float = WindowUtil.getHeight(context).toFloat()
     private val handler: Handler = Handler(Looper.getMainLooper())
     private var fadeAnimator: ValueAnimator? = null
+    private var currentImageIndex: Int = 0
 
     var rippleOffset: Float = 0f
-    var rippleFrequency: Float = 0f
     var point: Pair<Float, Float> = Pair(0f, 0f)
-    var currentImageIndex: Int = 0
     var fadeDuration: Long = 3000
     var fadeInterval: Long = 5000
 
@@ -122,16 +121,8 @@ internal class RippleRenderer(private val context: Context,
                 GLES20.glUniform1f(this, delta)
             }
 
-            GLES20.glGetUniformLocation(renderInfo.programId, "rippleStrength").run {
-                GLES20.glUniform1f(this, 10f)
-            }
-
             GLES20.glGetUniformLocation(renderInfo.programId, "rippleOffset").run {
                 GLES20.glUniform1f(this, rippleOffset)
-            }
-
-            GLES20.glGetUniformLocation(renderInfo.programId, "rippleFrequency").run {
-                GLES20.glUniform1f(this, rippleFrequency)
             }
 
             GLES20.glGetUniformLocation(renderInfo.programId, "rippleCenterUvX").run {
@@ -140,10 +131,6 @@ internal class RippleRenderer(private val context: Context,
 
             GLES20.glGetUniformLocation(renderInfo.programId, "rippleCenterUvY").run {
                 GLES20.glUniform1f(this, point.second)
-            }
-
-            GLES20.glGetUniformLocation(renderInfo.programId, "rippleSineDisappearDistance").run {
-                GLES20.glUniform1f(this, 100f)
             }
 
             GLES20.glGetUniformLocation(renderInfo.programId, "alpha").run {
@@ -182,25 +169,26 @@ internal class RippleRenderer(private val context: Context,
             return
         }
 
-        fadeAnimator = ValueAnimator.ofFloat(0f, 1f)
-        fadeAnimator?.duration = fadeDuration
-        fadeAnimator?.addUpdateListener({ animator ->
-            val velocity: Float = animator.animatedValue as Float
+        fadeAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = fadeDuration
+            addUpdateListener({ animator ->
+                val velocity: Float = animator.animatedValue as Float
 
-            renderInfoList[currentImageIndex].alpha = 1f - velocity
-            renderInfoList[getNextImageIndex()].alpha = velocity
-        })
-        fadeAnimator?.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                super.onAnimationEnd(animation)
-                currentImageIndex++
+                renderInfoList[currentImageIndex].alpha = 1f - velocity
+                renderInfoList[getNextImageIndex()].alpha = velocity
+            })
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    super.onAnimationEnd(animation)
+                    currentImageIndex++
 
-                if (currentImageIndex > renderInfoList.size - 1) {
-                    currentImageIndex = 0
+                    if (currentImageIndex > renderInfoList.size - 1) {
+                        currentImageIndex = 0
+                    }
+                    startCrossFadeAnimation()
                 }
-                startCrossFadeAnimation()
-            }
-        })
+            })
+        }
         handler.postDelayed({
             fadeAnimator?.start()
         }, fadeInterval)

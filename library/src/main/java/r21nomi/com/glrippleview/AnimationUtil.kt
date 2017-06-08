@@ -3,7 +3,7 @@ package r21nomi.com.glrippleview
 /**
  * Created by Ryota Niinomi on 17/05/25.
  */
-internal object AnimationUtil {
+object AnimationUtil {
 
     /**
      * Translate the range to another range

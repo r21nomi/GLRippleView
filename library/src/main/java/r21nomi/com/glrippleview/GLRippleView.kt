@@ -5,8 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
+import kotlin.properties.Delegates
 
 
 /**
@@ -19,9 +19,9 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     private var bgImage: Bitmap? = null
-    private var renderer: RippleRenderer? = null
-    private val windowWidth: Float = WindowUtil.getWidth(context).toFloat()
-    private val windowHeight: Float = WindowUtil.getHeight(context).toFloat()
+    private var renderer: RippleRenderer by Delegates.notNull()
+
+    var listener: Listener? = null
 
     init {
         setBackgroundImage(attrs)
@@ -36,43 +36,33 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     fun addBackgroundImages(images: List<Bitmap>) {
-        renderer?.addBackgroundImages(images)
+        renderer.addBackgroundImages(images)
     }
 
     fun setFadeDuration(duration: Long) {
-        renderer?.fadeDuration = duration
+        renderer.fadeDuration = duration
     }
 
     fun setFadeInterval(interval: Long) {
-        renderer?.fadeInterval = interval
+        renderer.fadeInterval = interval
     }
 
     fun startCrossFadeAnimation() {
-        renderer?.startCrossFadeAnimation()
+        renderer.startCrossFadeAnimation()
+    }
+
+    fun setRipplePoint(xAndY: Pair<Float, Float>) {
+        renderer.point = xAndY
+    }
+
+    fun setRippleOffset(offset: Float) {
+        renderer.rippleOffset = offset
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         event ?: return super.onTouchEvent(event)
 
-        if (event.action == MotionEvent.ACTION_MOVE) {
-            // center position
-            renderer?.point = Pair(
-                    AnimationUtil.map(event.x, 0f, windowWidth, -1f, 1f),
-                    AnimationUtil.map(event.y, 0f, windowHeight, -1f, 1f)
-            )
-
-            // offset (x)
-            (AnimationUtil.map(event.x / windowWidth, 0f, 1f, 0f, 0.02f)).let { value ->
-                Log.d(this.javaClass.name, "rippleOffset : " + value)
-                renderer?.rippleOffset = value
-            }
-
-            // frequency (y)
-            (AnimationUtil.map(event.y / height, 0f, 1f, 0f, 0.3f)).let { value ->
-                Log.d(this.javaClass.name, "rippleFrequency : " + value)
-                renderer?.rippleFrequency = value
-            }
-        }
+        listener?.onTouchEvent(event)
 
         return true
     }
@@ -84,5 +74,9 @@ class GLRippleView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
             bgImage = (drawable as BitmapDrawable).bitmap
             typedArray.recycle()
         }
+    }
+
+    interface Listener {
+        fun onTouchEvent(event: MotionEvent)
     }
 }
