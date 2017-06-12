@@ -27,23 +27,16 @@ internal class RippleRenderer(private val context: Context,
         private val NS_PER_SECOND = TimeUnit.SECONDS.toNanos(1).toFloat()
 
         private val VERTICES: FloatArray = floatArrayOf(
-                -1.0f, 1.0f, 0.0f, // ↖ left top︎
+                -1.0f, 1.0f, 0.0f,  // ↖ left top︎
                 -1.0f, -1.0f, 0.0f, // ↙︎ left bottom
-                1.0f, 1.0f, 0.0f, // ↗︎ right top
+                1.0f, 1.0f, 0.0f,   // ↗︎ right top
                 1.0f, -1.0f, 0.0f   // ↘︎ right bottom
-        )
-
-        private val TEX_COORDS = floatArrayOf(
-                0.0f, 0.0f, // ↖ left top︎
-                0.0f, 1.0f, // ↙︎ left bottom
-                1.0f, 0.0f, // ↗︎ right top
-                1.0f, 1.0f  // ↘︎ right bottom
         )
     }
 
     private var renderInfoList: MutableList<RenderInfo> = mutableListOf()
-    private val windowWidth: Float = WindowUtil.getWidth(context).toFloat()
-    private val windowHeight: Float = WindowUtil.getHeight(context).toFloat()
+    private var width: Float = 0f
+    private var height: Float = 0f
     private val handler: Handler = Handler(Looper.getMainLooper())
     private var fadeAnimator: ValueAnimator? = null
     private var currentImageIndex: Int = 0
@@ -87,7 +80,12 @@ internal class RippleRenderer(private val context: Context,
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        this.width = width.toFloat()
+        this.height = height.toFloat()
+
         GLES20.glViewport(0, 0, width, height)
+
+        setTexCoordBuffer()
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -111,7 +109,7 @@ internal class RippleRenderer(private val context: Context,
 
             // resolution
             GLES20.glGetUniformLocation(renderInfo.programId, "resolution").run {
-                GLES20.glUniform2f(this, windowWidth, windowHeight)
+                GLES20.glUniform2f(this, width, height)
             }
 
             // time
@@ -249,12 +247,40 @@ internal class RippleRenderer(private val context: Context,
         bgImages.forEachIndexed { index, bgImage ->
             renderInfoList.add(RenderInfo(
                     BufferUtil.convert(VERTICES),
-                    BufferUtil.convert(TEX_COORDS),
+                    null,
                     0,
                     0,
                     bgImage,
                     if (index == 0) 1f else 0f
             ))
+        }
+    }
+
+    /**
+     * Set texcoordBuffer to renderInfoList based on image size.
+     */
+    private fun setTexCoordBuffer() {
+        renderInfoList.forEach { info ->
+
+            var newWidth: Float = width
+            var newHeight: Float = info.bgImage.height * newWidth / info.bgImage.width
+
+            if (newHeight < height) {
+                newHeight = height
+                newWidth = info.bgImage.width * newHeight / info.bgImage.height
+            }
+
+            val rX: Float = (1f - width / newWidth) / 2f
+            val rY: Float = (1f - height / newHeight) / 2f
+
+            // Scale image with keep ratio.
+            val texCoords: FloatArray = floatArrayOf(
+                    0.0f + rX, 0.0f + rY, // ↖ left top︎
+                    0.0f + rX, 1.0f - rY, // ↙︎ left bottom
+                    1.0f - rX, 0.0f + rY, // ↗︎ right top
+                    1.0f - rX, 1.0f - rY  // ↘︎ right bottom
+            )
+            info.texcoordBuffer = BufferUtil.convert(texCoords)
         }
     }
 

@@ -8,7 +8,7 @@ import java.nio.FloatBuffer
  */
 internal data class RenderInfo(
         val vertexBuffer: FloatBuffer,
-        val texcoordBuffer: FloatBuffer,
+        var texcoordBuffer: FloatBuffer?,
         var programId: Int,
         var textureId: Int,
         val bgImage: Bitmap,
