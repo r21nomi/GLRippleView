@@ -1,4 +1,6 @@
 # GLRippleView
+[ ![Download](https://api.bintray.com/packages/r21nomi/maven/glrippleview/images/download.svg) ](https://bintray.com/r21nomi/maven/glrippleview/_latestVersion)
+
 Custom GLSurfaceView for Android to show ripple effect with OpenGL.
 
 Simple | Cross-fade
