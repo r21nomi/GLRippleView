@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'kotlin-android'
 
 android {
@@ -29,6 +30,16 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 }
+
 repositories {
     mavenCentral()
+}
+
+publish {
+    userOrg = 'r21nomi'
+    groupId = 'com.github.r21nomi'
+    artifactId = 'glrippleview'
+    publishVersion = '1.0.0'
+    desc = 'Custom GLSurfaceView for Android to show ripple effect with OpenGL.'
+    website = 'https://github.com/r21nomi/GLRippleView'
 }
