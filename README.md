@@ -1,5 +1,6 @@
 # GLRippleView
-[ ![Download](https://api.bintray.com/packages/r21nomi/maven/glrippleview/images/download.svg) ](https://bintray.com/r21nomi/maven/glrippleview/_latestVersion)
+[![Download](https://api.bintray.com/packages/r21nomi/maven/glrippleview/images/download.svg) ](https://bintray.com/r21nomi/maven/glrippleview/_latestVersion)
+[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-GLRippleView-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/5935)
 
 Custom GLSurfaceView for Android to show ripple effect with OpenGL.
 
